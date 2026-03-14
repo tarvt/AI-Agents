@@ -1,0 +1,7 @@
+# CrewAI agent (financial analysis + job application crews)
+# pip install -r requirements-crew.txt
+
+crewai>=0.28.0
+crewai-tools>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.29

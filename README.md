@@ -9,27 +9,38 @@ Dependencies are injected via **interfaces**; you can implement your own databas
 ```
 AI-Agents/
 ├── README.md
-├── Agents/                    # Agent implementations
-│   └── rag/                   # RAG chatbot (first agent)
+├── Agents/                         # One folder per agent
+│   ├── rag/                       # RAG chatbot
+│   │   ├── __init__.py
+│   │   ├── agent.py
+│   │   ├── interfaces.py
+│   │   └── llamaindex_backend.py
+│   ├── financial_analysis/        # L6: market + trading strategy
+│   │   ├── __init__.py
+│   │   ├── agent.py
+│   │   └── crew.py
+│   └── job_application/           # L7: resume + interview prep
 │       ├── __init__.py
-│       ├── agent.py           # RAG orchestration logic
-│       ├── interfaces.py      # RagQueryFn, ListSourceIdsFn, ChatCompleteFn
-│       └── llamaindex_backend.py  # LlamaIndex: ingest, index, rag_query
-├── Infra/                     # Shared infrastructure
-│   └── llm/                   # LLM provider (Gemini chat_complete)
-│       ├── __init__.py
-│       └── gemini.py
+│       ├── agent.py
+│       └── crew.py
+├── Infra/
+│   ├── llm/                       # Gemini chat_complete
+│   └── crewai_common.py           # Shared CrewAI tools/LLM
 ├── scripts/
-│   └── run_rag_chat.py        # CLI: ingest + chat for RAG
+│   ├── run_rag_chat.py
+│   └── run_crew.py                # CLI for financial_analysis / job_application
 ├── requirements-rag.txt
-└── RAG-TODO.md                # RAG stack checklist (all done)
+├── requirements-crew.txt
+└── RAG-TODO.md
 ```
 
-## Agents
+## Agents and libraries
 
-| Agent | Path | Description |
-|-------|------|-------------|
-| **RAG (chatbot)** | `Agents/rag/` | Knowledge-based chatbot: RAG retrieval + LLM response. Requires `rag_query`, `list_source_ids`, `chat_complete`. |
+| Agent | Path | Description | Libraries |
+|-------|------|-------------|-----------|
+| **RAG (chatbot)** | `Agents/rag/` | Knowledge-based Q&A: RAG retrieval + LLM response. | **LlamaIndex**, **HuggingFace** (embeddings), **Infra/llm** (Gemini) |
+| **Financial analysis** | `Agents/financial_analysis/` | Multi-agent: Data Analyst, Trading Strategy, Trade Advisor, Risk Advisor (L6). | **CrewAI**, **crewai-tools**, **LangChain** (OpenAI) |
+| **Job application** | `Agents/job_application/` | Multi-agent: Researcher, Profiler, Resume Strategist, Interview Preparer (L7). | **CrewAI**, **crewai-tools**, **LangChain** (OpenAI) |
 
 ## RAG chatbot (LlamaIndex + Gemini)
 
@@ -86,6 +97,66 @@ result = await run(
 # result["answer"], result["citations"]
 ```
 
+## Financial analysis agent (L6)
+
+CrewAI multi-agent: Data Analyst, Trading Strategy Developer, Trade Advisor, Risk Advisor.
+
+### Setup
+
+```bash
+pip install -r requirements-crew.txt
+```
+
+Set **OPENAI_API_KEY** and **SERPER_API_KEY**. Optional: **OPENAI_MODEL_NAME** (default `gpt-3.5-turbo`).
+
+### Run
+
+```bash
+python -m scripts.run_crew financial_analysis --stock AAPL --risk-tolerance Medium
+```
+
+### Use in code
+
+```python
+import asyncio
+from Agents.financial_analysis import FinancialAnalysisAgent
+
+agent = FinancialAnalysisAgent(config={"verbose": True})
+run = agent.build()
+result = asyncio.run(run(inputs={
+    "stock_selection": "AAPL",
+    "risk_tolerance": "Medium",
+    "trading_strategy_preference": "Day Trading",
+}))
+# result["result"]
+```
+
+## Job application agent (L7)
+
+CrewAI multi-agent: Tech Job Researcher, Profiler, Resume Strategist, Interview Preparer. Outputs `tailored_resume.md` and `interview_materials.md`.
+
+### Run
+
+```bash
+python -m scripts.run_crew job_application --job-url "https://..." --github "https://github.com/..." --writeup "Your bio..." --resume ./resume.md --output-dir ./
+```
+
+### Use in code
+
+```python
+import asyncio
+from Agents.job_application import JobApplicationAgent
+
+agent = JobApplicationAgent(config={"resume_path": "./resume.md", "output_dir": "./"})
+run = agent.build()
+result = asyncio.run(run(inputs={
+    "job_posting_url": "https://...",
+    "github_url": "https://github.com/...",
+    "personal_writeup": "Candidate bio...",
+}))
+# result["result"], result["outputs"]
+```
+
 ## RAG stack status (RAG-TODO.md)
 
 All items for the first agent (RAG chatbot) are done:
@@ -103,4 +174,5 @@ All items for the first agent (RAG chatbot) are done:
 ## Installing in another project
 
 - Copy the repo (or `Agents/`, `Infra/`, `scripts/`) and add the project root to `PYTHONPATH` so that `Agents` and `Infra` are importable.
-- No hard dependency on any external app; Python 3.10+ and the packages in `requirements-rag.txt` are sufficient for the RAG chatbot.
+- **RAG:** `pip install -r requirements-rag.txt` (+ `GEMINI_API_KEY` for chat).
+- **Financial analysis / Job application:** `pip install -r requirements-crew.txt` (+ `OPENAI_API_KEY`, `SERPER_API_KEY`).
