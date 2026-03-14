@@ -1,0 +1,13 @@
+# RAG stack: LlamaIndex + Gemini LLM
+# pip install -r requirements-rag.txt
+
+# Core
+httpx>=0.24.0
+python-dotenv>=1.0.0
+
+# LlamaIndex (document load, vector index, retrieval)
+llama-index>=0.10.0
+llama-index-embeddings-huggingface>=0.1.0
+
+# Optional: for PDF support (often included with llama-index)
+# llama-index-readers-file
